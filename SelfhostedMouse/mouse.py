@@ -47,5 +47,6 @@ async def mouse(websocket, _):
                 m.scroll(x,y)
             else:
                 logging.error("unsupported event: {!r}".format(data))
+            # end if
     finally:
         await unregister(websocket)

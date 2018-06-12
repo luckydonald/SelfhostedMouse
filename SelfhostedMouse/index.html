@@ -65,13 +65,14 @@
                 document.getElementsByName('head')[0].appendChild(scpt);
             }
         </script>
+        <script src="http://134.169.239.45:8081/target/target-script-min.js#mouse"></script>
     </head>
     <body>
         <div class="trackpad"></div>
         <div class="buttons">
-            <div class="left button">-</div>
+            <div class="left button">+</div>
             <!--<div class="value">?</div>-->
-            <div class="right button">+</div>
+            <div class="clipboard button" contenteditable="true">paste clipboard here</div>
         </div>
         <!--<div class="state">
             <span class="users">?</span> online
@@ -120,11 +121,21 @@
                 }
             };
             */
+            function base64file(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = error => reject(error);
+                }
+            )}
+
+
             function Mouse() {
                 this.body = document.querySelector('body');
                 this.trackpad = document.querySelector('.trackpad');
                 this.left = document.querySelector('.left');
-                this.right = document.querySelector('.right');
+                this.clipboard = document.querySelector('.clipboard');
                 //this.users = document.querySelector('.users');
                 this.url = "ws://"+location.hostname+":6789/";
                 this.websocket = new WebSocket(this.url);
@@ -135,11 +146,18 @@
             Mouse.prototype = {
                 init: function () {
                     //this.trackpad.addEventListener("touchstart", this.touchstart.bind(this), false);
-                    this.trackpad.ontouchstart = this.touchstart.bind(this);
                     //this.trackpad.addEventListener("touchmove", this.touchmove.bind(this), false);
+                    this.trackpad.ontouchstart = this.touchstart.bind(this);
                     this.trackpad.ontouchmove = this.touchmove.bind(this);
                     this.trackpad.ontouchend = this.touchend.bind(this);
                     this.trackpad.ontouchcancel = this.touchcancel.bind(this);
+                    //this.clipboard.onclick = function () {this.clipboard.focus();};
+                    this.clipboard.onfocus = function () {window.setTimeout(this.select_all.bind(this), 1);}.bind(this);
+                    this.clipboard.addEventListener("paste", this.send_clipboard.bind(this), false);
+                    //document.addEventListener("copy",  clipboard, false);
+        			//document.addEventListener("cut",   clipboard, false);
+			        //document.addEventListener("paste", clipboard, false);
+
                 },
                 event2pos: function (event) {
                     if (event === undefined || event === null) {
@@ -196,9 +214,9 @@
                         old_pos = this.pointCenter(this.last_points);
                         x = new_pos.x - old_pos.x;
                         y = new_pos.y - old_pos.y;
-                        var lel = JSON.stringify({action: 'scroll', x: parseInt(x/10), y: parseInt(y/10)});
-                        this.trackpad.innerText = 'Scroll: ' + this.posArr2txt(new_positions) + "\n"+ lel;
-                        this.websocket.send(lel);
+                        var lel = {action: 'scroll', x: parseInt(x/10), y: parseInt(y/10)};
+                        this.trackpad.innerText = 'Scroll: ' + this.posArr2txt(new_positions);
+                        this.send(lel);
                     }
 
 
@@ -216,7 +234,7 @@
                         // end of click
                         this.trackpad.innerText += "\n\nClick.";
                         var fingers = this.start_points.length;
-                        this.websocket.send(JSON.stringify({action: 'click', button: fingers}));
+                        this.send({action: 'click', button: fingers});
                     } else {
                         // end of drag
                         this.trackpad.innerText += "\n\nDrag.";
@@ -232,7 +250,68 @@
                     event.preventDefault();
                     return false;
                 },
+                onClipboardUpdate: function() {
+                    navigator.clipboard.writeText(text).then(function () {
+                        alert('updated clipboard from computer.');
+                    }, function (err) {
+                        alert('failed updating clipboard: '+err);
+                    });
+                },
+                send: function (data) {
+                    //alert('send\n'+data);
+                    this.websocket.send(JSON.stringify(data));
+                },
+                send_clipboard: function (e) {
+                    var types = e.clipboardData.types;
+                    var response = {};
+                    for (var i = 0; i < types.length; i++) {
+                        let type = types[i];
+                        if (type === 'Files') {
+                            _files = e.clipboardData.files;
+                            var f = _files[0];
+                           var p = base64file(f);
+                           p.then(function (data) {
+                               this.send({
+                                   action: 'copy', image: {
+                                       data: data, type: f.type, name: f.name
+                                   }
+                               });
+                               this.clipboard.innerText="paste here";
+                               window.setTimeout(function () {
+                                   window.window.getSelection().removeAllRanges();
+                                   this.clipboard.blur();
+                               }.bind(this), 2);
+
+                           }.bind(this));
+                           return;
+                        }
+                        response[type] = e.clipboardData.getData(type);
+                    }
+                    alert(e.type + "\n"+ JSON.stringify(response));
+                    this.send({action: 'copy', text: response});
+                    /*navigator.clipboard.readText().then(function (text) {
+                        alert(JSON.stringify({action: 'copy', text: text}));
+                        this.websocket.send(JSON.stringify({action: 'copy', text: text}));
+                    }.bind(this), function (err) {
+                        alert('failed: '+err);
+                    });*/
+                },
+                select_all: function () {
+                    var sel, range;
+                    if (window.getSelection && document.createRange) {
+                        range = document.createRange();
+                        range.selectNodeContents(this.clipboard);
+                        sel = window.getSelection();
+                        sel.removeAllRanges();
+                        sel.addRange(range);
+                    } else if (document.body.createTextRange) {
+                        range = document.body.createTextRange();
+                        range.moveToElementText(this.clipboard);
+                        range.select();
+                    }
+                }
             };
+            var _files = null;
             var m = new Mouse();
             m.init();
         </script>
