@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>WebSocket demo</title>
+        <title>Selfhosted Mouse</title>
         <style type="text/css">
             body {
                 font-family: "Courier New", sans-serif;
@@ -42,15 +42,21 @@
                 top: 0;
                 left: 0;
                 right: 0;
-                bottom: 2em;
+                bottom: 0;
                 position: absolute;
-                background: #656565;
+                //background: #656565;
             }
             html, body {
                 overflow: hidden;
                 -webkit-overflow-scrolling: revert;
             }
+            body {
+                background: #656565;
+            }
         </style>
+        <meta name="apple-mobile-web-app-title" content="shMouse" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <script>
             if(true) {  // weinre debug
                 var scpt = document.createElement('script');
@@ -115,6 +121,7 @@
             };
             */
             function Mouse() {
+                this.body = document.querySelector('body');
                 this.trackpad = document.querySelector('.trackpad');
                 this.left = document.querySelector('.left');
                 this.right = document.querySelector('.right');
@@ -155,7 +162,7 @@
                     return arr.map(itm => itm.x + " | " + itm.y).reduce((old, next) =>  old + "\n" + next);
                 },
                 touchstart: function (event) {
-                    this.trackpad.style.backgroundColor = 'green';
+                    this.body.style.backgroundColor = 'green';
                     this.start_points = this.event2pos(event);
                     this.last_points = this.start_points;
                     this.did_move = false;
@@ -176,7 +183,7 @@
                     var new_positions = this.event2pos(event),
                         new_pos, old_pos, x, y;
                     if (new_positions.length === 1 || this.last_points.length === 1) {  // simple drag -> mouse move
-                        this.trackpad.style.backgroundColor = '#838383';
+                        this.body.style.backgroundColor = '#838383';
                         this.trackpad.innerText = 'Move: ' + this.posArr2txt(new_positions);
                         new_pos = new_positions[0];
                         old_pos = this.last_points[0];
@@ -184,7 +191,7 @@
                         y = new_pos.y - old_pos.y;
                         this.websocket.send(JSON.stringify({action: 'move', x: x, y: y}));
                     } else if (new_positions.length === 2 && this.last_points.length === 2) {  // two finger drag -> mouse move
-                        this.trackpad.style.backgroundColor = 'orange';
+                        this.body.style.backgroundColor = 'orange';
                         new_pos = this.pointCenter(new_positions);
                         old_pos = this.pointCenter(this.last_points);
                         x = new_pos.x - old_pos.x;
@@ -201,7 +208,7 @@
                     return false;
                 },
                 touchend: function (event) {
-                    this.trackpad.style.backgroundColor = '#656565';
+                    this.body.style.backgroundColor = '#656565';
                     //this.start_points = this.event2pos(event);
                     var new_pos = this.event2pos(event);
                     this.trackpad.innerText = "\n\nEnded\n" + this.posArr2txt(new_pos);
@@ -218,7 +225,7 @@
                     return false;
                 },
                 touchcancel: function (event) {
-                    this.trackpad.style.backgroundColor = 'red';
+                    this.body.style.backgroundColor = 'red';
                     //this.start_points = this.event2pos(event);
                     var new_pos = this.event2pos(event);
                     this.trackpad.innerText += "\n\nCanceled\n" + (this.posArr2txt(new_pos));
