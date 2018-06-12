@@ -972,7 +972,6 @@ var prettyPrint = (function(){
                     this.start_points = this.event2pos(event);
                     this.last_points = this.start_points;
                     this.did_move = false;
-                    this.trackpad.innerText = 'start: ' + this.posArr2txt(this.start_points);
                     event.preventDefault();
                     return false;
                 },
@@ -992,7 +991,6 @@ var prettyPrint = (function(){
                         velocity_x, velocity_y;
                     if (new_positions.length === 1 || this.last_points.length === 1) {  // simple drag -> mouse move
                         this.body.style.backgroundColor = '#94ff00';
-                        this.trackpad.innerText = 'Move: ' + this.posArr2txt(new_positions);
                         new_pos = new_positions[0];
                         old_pos = this.last_points[0];
                         x = new_pos.x - old_pos.x;
@@ -1007,9 +1005,8 @@ var prettyPrint = (function(){
                         x = parseInt(x/10);
                         y = parseInt(y/10);
                         if (this.invert_scroll) {
-                            x *= -1;
+                            y *= -1;
                         }
-                        this.trackpad.innerText = 'Scroll: ' + this.posArr2txt(new_positions);
                         this.send({action: 'scroll', x: x, y: y});
                     }
 
@@ -1024,15 +1021,12 @@ var prettyPrint = (function(){
                     this.body.style.backgroundColor = '#656565';
                     //this.start_points = this.event2pos(event);
                     var new_pos = this.event2pos(event);
-                    this.trackpad.innerText = "\n\nEnded\n" + this.posArr2txt(new_pos);
                     if (this.did_move === false) {
                         // end of click
-                        this.trackpad.innerText += "\n\nClick.";
                         var fingers = this.start_points.length;
                         this.send({action: 'click', button: fingers});
                     } else {
                         // end of drag
-                        this.trackpad.innerText += "\n\nDrag.";
                     }
                     event.preventDefault();
                     return false;
@@ -1041,7 +1035,6 @@ var prettyPrint = (function(){
                     this.body.style.backgroundColor = 'red';
                     //this.start_points = this.event2pos(event);
                     var new_pos = this.event2pos(event);
-                    this.trackpad.innerText += "\n\nCanceled\n" + (this.posArr2txt(new_pos));
                     event.preventDefault();
                     return false;
                 },

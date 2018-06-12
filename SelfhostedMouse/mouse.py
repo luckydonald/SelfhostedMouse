@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
+import platform
+
 import websockets
 from base64 import decodebytes
 from pynput.mouse import Controller, Button
@@ -27,6 +29,47 @@ async def unregister(websocket):
     USERS.remove(websocket)
 
 
+if platform.system() == 'Darwin':  # Mac OS X
+    import Quartz
+
+    def check_postiton(x, y):
+        best = False, False
+        for i in range(1000):  # if you have more that 1000 displays connected, raise an issue!
+            correct_x = correct_y = False
+            bounds = Quartz.CGDisplayBounds(i)
+            if bounds.origin.x == 0 and bounds.origin.y == 0 and bounds.size.width == 0 and bounds.size.height == 0:
+                # we are at the end
+                break
+            # end if
+            if x >= bounds.origin.x and x < bounds.origin.x + bounds.size.width:
+                correct_x = True
+            # end if
+            if y >= bounds.origin.y and y < bounds.origin.y + bounds.size.height:
+                correct_y = True
+            # end if
+            if correct_x and correct_y:
+                return True
+            # end if
+        # end for
+        return False
+    # end def
+
+    def mouse_move(x,y):
+        _x, _y = m.position
+        _x_ = _x+x
+        _y_ = _y+y
+
+        if check_postiton(_x_, _y_):
+            m.position = _x_, _y_
+        else:
+            logger.debug('Position {x}x{y} would be out of bounds.'.format(x=x, y=y))
+        # end if
+    # end def
+else:
+    mouse_move = m.move
+# end if
+
+
 async def mouse(websocket, _):
     # register(websocket) sends user_event() to websocket
     logger.debug('called.')
@@ -43,7 +86,7 @@ async def mouse(websocket, _):
             elif data['action'] == 'move' and 'x' in data and 'y' in data:
                 x, y = data['x'], data['y']
                 logger.info('move - x: {x}, y: {y}'.format(x=y, y=y))
-                m.move(x,y)
+                mouse_move(x,y)
             elif data['action'] == 'scroll' and 'x' in data and 'y' in data:
                 x, y = int(data['x']), int(data['y'])
                 logger.info('scroll - x: {x}, y: {y}'.format(x=x, y=y))
