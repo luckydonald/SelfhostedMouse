@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 import json
+import websockets
+from base64 import decodebytes
 from pynput.mouse import Controller, Button
+from .luckydonald_clipboard.clipboard_mac import Clipboard
 from luckydonaldUtils.logger import logging
 
 __author__ = 'luckydonald'
@@ -45,8 +48,29 @@ async def mouse(websocket, _):
                 x, y = int(data['x']), int(data['y'])
                 logger.info('scroll - x: {x}, y: {y}'.format(x=x, y=y))
                 m.scroll(x,y)
+            elif data['action'] == 'paste' and (('text' in data and data['text']) or ('file' in data and data['file'])):
+                append = False
+                import base64
+                if 'file' in data and data['file']:
+                    file = data['file']
+                    img_data = file['data']
+                    del file['data']
+                    img_type, img_data = tuple(img_data.split(",", 1))
+                    logger.info('got file of type {!r}: {!r}'.format(img_type, file))
+                    assert img_type.endswith(';base64');
+                    assert img_type.startswith('data:')
+                    img_mime = img_type[5:-7]
+                    img_data = base64.b64decode(img_data)
+                    Clipboard().copy_img(img_data, mime=img_mime)
+                    append = True
+                # end if
+                if 'text' in data and data['text']:
+                    Clipboard().copy_text(data['text'], clear_first=not append)
+                # end if
             else:
                 logging.error("unsupported event: {!r}".format(data))
             # end if
+    except websockets.exceptions.ConnectionClosed:
+        logger.info('ConnectionClosed, disconnecting.')
     finally:
         await unregister(websocket)

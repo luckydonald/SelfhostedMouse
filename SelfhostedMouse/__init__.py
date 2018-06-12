@@ -9,7 +9,7 @@ BIND_IP = '0.0.0.0'
 
 __author__ = 'luckydonald'
 logger = logging.getLogger(__name__)
-logging.add_colored_handler(level=logging.INFO)
+logging.add_colored_handler(level=logging.DEBUG)
 
 
 
@@ -19,15 +19,13 @@ import websockets
 
 
 
-
-
 def handle_read(loop, conn, waiter):
     req = conn.recv(1024)
     loop.remove_reader(conn.fileno())
     waiter.set_result(req)
 
 
-sock = web_socket(BIND_IP , 8080)
+sock = web_socket(BIND_IP, 8080)
 loop = asyncio.get_event_loop()
 logger.debug('registering web_server')
 loop.create_task(web_server(loop, sock))

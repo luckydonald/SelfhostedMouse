@@ -24,7 +24,7 @@ async def web_handler(loop, conn):
 
 async def web_server(loop, sock):
     while True:
-        logger.debug('ws server started.')
+        logger.debug('web server started request.')
         conn, addr = await loop.sock_accept(sock)
         loop.create_task(web_handler(loop, conn))
     # end while
