@@ -82,17 +82,17 @@ class WebSocketServerProtocol2(websockets.WebSocketServerProtocol):
             return None
         # end if
         if path == "/":  # main page
-            headers['Content-type'] = 'text/html'
+            headers['Content-type'] = 'text/html; charset=utf-8'
             body = read_file('./static/index.html')
         elif path in PATHS.JS:  # prettyprint.js
-            headers['Content-type'] = 'text/javascript'
+            headers['Content-type'] = 'text/javascript; charset=utf-8'
             body = read_file(PATHS.js(path))
         elif path in PATHS.CSS:  # prettyprint.js
-            headers['Content-type'] = 'text/css'
+            headers['Content-type'] = 'text/css; charset=utf-8'
             body = read_file(PATHS.css(path))
         else:  # 404, not found
             status_code = HTTPStatus(404)
-            headers['Content-type'] = 'text/plain'
+            headers['Content-type'] = 'text/plain; charset=utf-8'
             body = "`" + get_quote('en') + "`\n\n" \
                    "The requested page was not found. Probably somebody broke something."
         return status_code, headers.items(), b(body)
