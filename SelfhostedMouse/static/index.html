@@ -20,6 +20,10 @@
                 left: 0;
                 right: 0;
                 overflow-x: scroll;
+                display: none;
+            }
+            .console.show {
+                display: block;
             }
             .buttons, .settings {
                 font-size: 4em;
@@ -115,6 +119,9 @@
                 <label>Screen orientation</label>
                 <div class="orientation button">0°</div>
 
+                <label>Show debugging log</label>
+                <div class="log button">no</div>
+
                 <label>Reload the page</label>
                 <div class="reload button" id="reload" onclick="location.reload()">reload</div>
             </div>
@@ -154,27 +161,48 @@
                 this.mouse = mouse;
 
                 this.pane = document.querySelector('.settings');
-                this.open = document.querySelector('.setting');
-                this.close = document.querySelector('.settings .close');
-                this.scroll = document.querySelector('.settings .scroll');
-                this.orientation = document.querySelector('.settings .orientation');
+                this.open = document.querySelector('.button.setting');
+                this.close = document.querySelector('.settings .button.close');
+                this.scroll = document.querySelector('.settings .button.scroll');
+                this.orientation = document.querySelector('.settings .button.orientation');
+                this.console = document.querySelector('.settings .button.log');
+
+                this.console_pane = document.querySelector('.console');
+
             }
             Settings.prototype = {
                 bind: function () {
                     this.open.onclick = this.toggle_show.bind(this);
                     this.close.onclick = this.toggle_show.bind(this);
                     this.scroll.onclick = this.toggle_scroll.bind(this);
+                    this.console.onclick = this.toggle_console.bind(this);
                     this.orientation.onclick = this.toggle_orientation.bind(this);
                     // load settings
                     this.update_scroll(this.storage_get('invert_scroll', true));
                     this.update_orientation(this.storage_get('orientation', 0));
+                    this.update_console(this.storage_get('show_console', false));
                 },
                 toggle_show(e) {
-                    console.log('toggled');
+                    console.log('settings toggled');
                     if (this.pane.classList.contains('show')) {
                         this.pane.classList.remove('show');
                     } else {
                         this.pane.classList.add('show');
+                    }
+                },
+                toggle_console() {
+                    console.debug('console toggled');
+                    this.update_console(!this.console_pane.classList.contains('show'));
+                },
+                update_console(show) {
+                    if (show) {
+                        this.console_pane.classList.add('show');
+                        this.console.innerText = 'yes';
+                        this.storage_save('show_console', true);
+                    } else {
+                        this.console_pane.classList.remove('show');
+                        this.console.innerText = 'no';
+                        this.storage_save('show_console', false);
                     }
                 },
                 toggle_orientation: function (e) {
