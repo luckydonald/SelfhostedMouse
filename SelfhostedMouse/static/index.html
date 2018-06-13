@@ -4,16 +4,54 @@
         <meta charset="utf-8" />
         <title>Selfhosted Mouse</title>
         <style type="text/css">
+            html, body {
+                overflow: hidden;
+                -webkit-overflow-scrolling: revert;
+            }
             body {
                 font-family: "Courier New", sans-serif;
                 text-align: center;
+                background: #656565;
             }
-            .buttons {
+            .console {
+                position: absolute;
+                top: 0;
+                bottom: 80%;
+                left: 0;
+                right: 0;
+                overflow-x: scroll;
+            }
+            .buttons, .settings {
                 font-size: 4em;
                 display: flex;
                 justify-content: center;
                 position: absolute;
                 bottom: 0;
+            }
+            .settings {
+                justify-content: left;
+                height: 0;
+                opacity: 0.0;
+                display: none;
+                background-color: rgba(6, 6, 6, 0.9);
+                position: absolute;
+                color: white;
+                left: 0;
+                right: 0;
+                bottom: 0;
+            }
+            .settings.show {
+                opacity: 1.0;
+                display: block;
+                height: 100%;
+            }
+            .settings .upper {
+                overflow-x: auto;
+                padding-top: 1em;
+                padding-bottom: 1em;
+            }
+            .settings .upper label {
+                margin-top: 1em;
             }
             .button, .value {
                 line-height: 1;
@@ -27,9 +65,14 @@
                 cursor: pointer;
                 user-select: none;
             }
-            .scroll {
+            .settings .button.close {
+                position: absolute;
+                left: 0;
+                right: 0;
+                bottom: 0;
             }
             .trackpad {
+                /*top: 20%; /* console */
                 top: 0;
                 left: 0;
                 right: 0;
@@ -39,14 +82,8 @@
                 overflow: scroll;
                 line-break: auto;
             }
-            html, body {
-                overflow: hidden;
-                -webkit-overflow-scrolling: revert;
-            }
-            body {
-                background: #656565;
-            }
         </style>
+        <meta charset="utf-8" />
         <meta name="apple-mobile-web-app-title" content="shMouse" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -66,41 +103,24 @@
         <div class="trackpad"></div>
         <div class="console"></div>
         <div class="buttons">
-            <div class="scroll button">up</div>
-            <!--<div class="value">?</div>-->
+            <div class="setting button">settings</div>
             <div class="paste button" contenteditable="true">paste here</div>
+        </div>
+        <div class="settings">
+            <div class="close button">close</div>
+            <div class="upper">
+                <label>Native scrolling</label>
+                <div class="scroll button" id="scroll">up</div>
+                <label>Reload the page</label>
+                <div class="reload button" id="reload" onclick="location.reload()">reload</div>
+            </div>
         </div>
         <!--<div class="state">
             <span class="users">?</span> online
         </div>
         -->
         <script>
-            /*document.ontouchmove = function (event) {
-                event.preventDefault();
-            }*/
-
-            /*left.onclick = function (event) {
-                websocket.send(JSON.stringify({action: 'minus'}));
-            }
-            right.onclick = function (event) {
-                websocket.send(JSON.stringify({action: 'plus'}));
-            }
-            trackpad.ontouchmove = function (event) {
-                trackpad.style.backgroundColor = 'red';
-                event.preventDefault();
-                return false;
-            }
-            trackpad.ontouchend = function (event) {
-                trackpad.style.backgroundColor = 'gray';
-                event.preventDefault();
-                return false;
-            }
-            trackpad.ontouchmove = function (event) {
-                var touch = event.touches[0];
-                trackpad.innerText = touch.clientX + " x " + touch.clientY;
-                event.preventDefault();
-                return false;
-            }
+            /*
             websocket.onmessage = function (event) {
                 data = JSON.parse(event.data);
                 switch (data.type) {
@@ -126,19 +146,109 @@
                 }
             )}
 
+            function Settings(mouse) {
+                this.mouse = mouse;
+
+                this.pane = document.querySelector('.settings');
+                this.open = document.querySelector('.setting');
+                this.close = document.querySelector('.settings .close');
+                this.scroll = document.querySelector('.settings .scroll');
+            }
+            Settings.prototype = {
+                bind: function () {
+                    this.open.onclick = this.toggle_show.bind(this);
+                    this.close.onclick = this.toggle_show.bind(this);
+                    this.scroll.onclick = this.toggle_scroll.bind(this);
+                    // load settings
+                    this.update_scroll(this.storage_get('invert_scroll', true));
+                },
+                toggle_show(e) {
+                    console.log('toggled');
+                    if (this.pane.classList.contains('show')) {
+                        this.pane.classList.remove('show');
+                    } else {
+                        this.pane.classList.add('show');
+                    }
+                },
+                toggle_scroll: function (e) {
+                    this.update_scroll(!this.mouse.invert_scroll);
+                },
+                update_scroll(invert) {
+                    this.mouse.invert_scroll = invert;
+                    this.scroll.innerText = invert ? 'down' : 'up';
+                    this.storage_save('invert_scroll', invert);
+                }
+            };
+
+            Settings.prototype.storage_check = function() {
+                return typeof(Storage) !== "undefined";
+            };
+
+            Settings.prototype.storage_save = function(key, value, days) {
+                value = JSON.stringify(value);
+                if (this.storage_check()) {
+                    localStorage.setItem(key, value);
+                } else {
+                    // cookie fallback
+                    var expires = "";
+                    if (days) {
+                        var date = new Date();
+                        date.setTime(date.getTime()+(days*24*60*60*1000));
+                        expires = "; expires=" + date.toGMTString();
+                    }
+                    document.cookie = key+"="+value+expires+"; path=/";
+                }
+            };
+
+            Settings.prototype.storage_get = function(key, default_value=undefined) {
+                var value = null;
+                if (this.storage_check()) {
+                    value = localStorage.getItem(key);
+                    if (value === null) {
+                        return default_value;
+                    }
+                } else {
+                    // cookie fallback
+                    /*
+                     * after adding a cookie like
+                     * >> document.cookie = "bar=test; expires=Thu, 14 Jun 2018 13:05:38 GMT; path=/"
+                     * the content of document.cookie may look like
+                     * >> "foo=value; bar=test"
+                     */
+                    var nameEQ = name + "=";  // what we are looking for
+                    var ca = document.cookie.split(';');  // split into separate cookies
+                    for(var i=0;i < ca.length;i++) {
+                        var c = ca[i];  // the current cookie
+                        while (c.charAt(0) === ' ') c = c.substring(1,c.length);  // remove leading spaces
+                        if (c.indexOf(nameEQ) === 0) {  // if it is the searched cookie
+                            value = c.substring(nameEQ.length,c.length);
+                            break;
+                        }
+                    }
+                    return default_value; // no cookie found
+                }
+                return JSON.parse(value);
+            };
 
             function Mouse() {
                 this.body = document.querySelector('body');
                 this.trackpad = document.querySelector('.trackpad');
-                this.scroll = document.querySelector('.scroll');
                 this.paste = document.querySelector('.paste');
                 this.paste_last_html = this.paste.innerHTML;
                 //this.users = document.querySelector('.users');
                 this.url = "ws://"+location.host+"/s";
                 this.websocket = new WebSocket(this.url);
+                this.websocket.addEventListener('open', function (e) {
+                     console.log('websocket opened', e);
+                });
+                this.websocket.addEventListener('message', function (e) {
+                     console.log('websocket message', e);
+                });
                 this.websocket.addEventListener('error', function (e) {
-                     var tbl = prettyPrint( myObject );
-                    document.body.insertBefore( tbl, document.body.firstChild );
+                     console.error('websocket error', e);
+                });
+                this.websocket.addEventListener('close', function (e) {
+                     console.log('websocket closed', e);
                 });
                 this.start_points = [];
                 this.last_time = null;
@@ -147,57 +257,7 @@
                 this.invert_scroll = false;
             }
             Mouse.prototype = {
-                storage_check: function() {
-                    return typeof(Storage) !== "undefined";
-                },
-                storage_save: function(key, value, days) {
-                    value = JSON.stringify(value);
-                    if (this.storage_check()) {
-                        localStorage.setItem(key, value);
-                    } else {
-                        // cookie fallback
-                        var expires = "";
-                        if (days) {
-                            var date = new Date();
-                            date.setTime(date.getTime()+(days*24*60*60*1000));
-                            expires = "; expires=" + date.toGMTString();
-                        }
-                        document.cookie = key+"="+value+expires+"; path=/";
-                    }
-                },
-                storage_get(key, default_value=undefined) {
-                    var value = null;
-                    if (this.storage_check()) {
-                        value = localStorage.getItem(key);
-                        if (value === null) {
-                            return default_value;
-                        }
-                    } else {
-                        // cookie fallback
-                        /*
-                         * after adding a cookie like
-                         * >> document.cookie = "bar=test; expires=Thu, 14 Jun 2018 13:05:38 GMT; path=/"
-                         * the content of document.cookie may look like
-                         * >> "foo=value; bar=test"
-                         */
-                        var nameEQ = name + "=";  // what we are looking for
-                        var ca = document.cookie.split(';');  // split into separate cookies
-                        for(var i=0;i < ca.length;i++) {
-                            var c = ca[i];  // the current cookie
-                            while (c.charAt(0) === ' ') c = c.substring(1,c.length);  // remove leading spaces
-                            if (c.indexOf(nameEQ) === 0) {  // if it is the searched cookie
-                                value = c.substring(nameEQ.length,c.length);
-                                break;
-                            }
-                        }
-                        return default_value; // no cookie found
-                    }
-                    return JSON.parse(value);
-                },
-                init: function () {
-                    // load settings
-                    this.update_scroll(this.storage_get('invert_scroll', true));
-
+                bind: function () {
                     // bind events
                     this.trackpad.ontouchstart = this.touchstart.bind(this);
                     this.trackpad.ontouchmove = this.touchmove.bind(this);
@@ -207,7 +267,6 @@
                     this.paste.onblur = this.paste_blur.bind(this);
                     this.paste.addEventListener("paste", this.send_clipboard.bind(this), false);
                     this.paste.addEventListener('keydown', this.paste_on_keydown.bind(this), false);
-                    this.scroll.onclick = this.toggle_scroll.bind(this);
                 },
                 event2pos: function (event) {
                     if (event === undefined || event === null) {
@@ -275,6 +334,7 @@
                         y = new_pos.y - old_pos.y;
                         x = parseInt(x/10);
                         y = parseInt(y/10);
+                        var tmp = 0;
                         if (this.invert_scroll) {
                             y *= -1;
                         }
@@ -417,21 +477,16 @@
                         return false;
                     }
                 },
-                toggle_scroll: function (e) {
-                    this.update_scroll(!this.invert_scroll);
-                },
-                update_scroll(invert) {
-                    this.invert_scroll = invert;
-                    this.scroll.innerText = invert ? 'down' : 'up';
-                    this.storage_save('invert_scroll', invert);
-                }
             };
             var _files = null;
             var c = new HtmlConsole(document.querySelector('.console'));
             c.register();
             c.test();
             var m = new Mouse();
-            m.init();
+            var s = new Settings(m);
+            m.bind();
+            s.bind();
+
         </script>
     </body>
 </html>
