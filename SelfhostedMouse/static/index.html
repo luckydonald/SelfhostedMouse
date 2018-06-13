@@ -57,10 +57,13 @@
                 //document.querySelector('head').appendChild(scpt);
             }
         </script>
-        <script src="/pp.js"></script>
+        <link href="/console/stylesheet.css" rel="stylesheet" type="text/css" />
+        <script src="/prettyprint.js"></script>
+        <script src="/console/javascript.js"></script>
     </head>
     <body>
         <div class="trackpad"></div>
+        <div class="console"></div>
         <div class="buttons">
             <div class="scroll button">up</div>
             <!--<div class="value">?</div>-->
@@ -423,6 +426,9 @@
                 }
             };
             var _files = null;
+            var c = new HtmlConsole(document.querySelector('.console'));
+            c.register();
+            c.test();
             var m = new Mouse();
             m.init();
         </script>

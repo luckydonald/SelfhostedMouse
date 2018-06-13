@@ -1,0 +1,28 @@
+.console {
+}
+.console .entry {
+    background-color: white;
+    border-left: 2em solid hotpink;
+    text-align: left;
+    padding-left: 1em;
+}
+.console .entry.debug {
+    border-color: gray;
+    color: gray;
+}
+.console .entry.log {
+    border-color: #060606;
+    color: #060606;
+}
+.console .entry.info {
+    border-color: blue;
+    color: blue;
+}
+.console .entry.warn {
+    border-color: orange;
+    color: orange;
+}
+.console .entry.error, .console .entry.exception {
+    border-color: red;
+    color: red;
+}

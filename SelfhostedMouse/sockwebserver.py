@@ -9,6 +9,34 @@ from luckydonaldUtils.eastereggs.quotes import get_quote
 logger = logging.getLogger(__name__)
 
 
+class PATHS(object):
+    # {'server': 'file system'}
+    #  None = use server path
+    JS = {
+        '/prettyprint.js': None,
+        '/console/javascript.js': None,
+    }
+    CSS = {
+        '/console/stylesheet.css': None
+    }
+
+    @staticmethod
+    def relative_path(path):
+        return './static' + path
+    # end def
+
+    @classmethod
+    def js(cls, path):
+        return cls.relative_path(path if PATHS.JS[path] is None else PATHS.JS[path])
+    # end def
+
+    @classmethod
+    def css(cls, path):
+        return cls.relative_path(path if PATHS.CSS[path] is None else PATHS.CSS[path])
+    # end def
+# end def
+
+
 def read_file(file):
     with open(file, 'rb') as f:
         return f.read()
@@ -50,21 +78,25 @@ class WebSocketServerProtocol2(websockets.WebSocketServerProtocol):
         status_code = HTTPStatus(200)
         headers = get_headers()
         body = b''
-        if path == "/":  # main page
-            body = read_file('./static/index.html')
-            headers['Content-type'] = 'text/html'
-        elif path == '/pp.js':
-            body = read_file('./static/prettyprint.js')
-            headers['Content-type'] = 'text/javascript'
-        elif path == '/s':  # socket
+        if path == '/s':  # socket
             return None
-        else:
+        # end if
+        if path == "/":  # main page
+            headers['Content-type'] = 'text/html'
+            body = read_file('./static/index.html')
+        elif path in PATHS.JS:  # prettyprint.js
+            headers['Content-type'] = 'text/javascript'
+            body = read_file(PATHS.js(path))
+        elif path in PATHS.CSS:  # prettyprint.js
+            headers['Content-type'] = 'text/css'
+            body = read_file(PATHS.css(path))
+        else:  # 404, not found
+            status_code = HTTPStatus(404)
+            headers['Content-type'] = 'text/plain'
             body = "`" + get_quote('en') + "`\n\n" \
                    "The requested page was not found. Probably somebody broke something."
-            status_code = HTTPStatus(404)
         return status_code, headers.items(), b(body)
     # end def
-
 # end class
 
 
