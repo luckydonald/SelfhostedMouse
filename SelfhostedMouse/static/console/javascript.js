@@ -7,19 +7,28 @@ HtmlConsole.prototype._add_log = function(level) {
     this._orginal_functions[level] = old_function;
     return function() {
         try {
-            old_function(arguments);
-        } catch (e) {}
+            old_function.apply(null, arguments);
+        } catch (e) {
+            try {
+                old_function(arguments);
+            } catch (e) {}
+        }
+        var args = [].slice.call(arguments);
         var err = document.createElement('div');
         err.setAttribute('class', 'entry ' + level);
-        //err.innerText = text;
-        var value = undefined;
-        if (arguments.length === 1) {
-            value = arguments[0];
-        } else if (arguments.length > 1) {
-            value = arguments;
+        if (args.length === 0) {
+            // pass
+        } else {
+            if (typeof args[0] === 'string') {
+                err.appendChild(document.createTextNode(args[0]));
+                args.shift();
+            }
+            if (args.length === 1) {
+                err.appendChild(prettyPrint(args[0]));
+            } else if (args.length > 1) {
+                err.appendChild(prettyPrint(args));
+            }
         }
-        var log = prettyPrint(value);
-        err.appendChild(log);
         this.element.appendChild(err);
         err.scrollIntoView({behavior: 'smooth', block: 'end'});
     }.bind(this);
