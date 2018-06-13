@@ -207,7 +207,8 @@
                     }
                 },
                 toggle_orientation: function (e) {
-                    var orientation = ((this.mouse.orientation + 180) % 360)-90;  // cycles through -90, 0, 90, 180
+                    var offset = 0;
+                    var orientation = this.mouse._degree_rotate(this.mouse.orientation, 90);  // cycles through -90, 0, 90, 180
                     this.update_orientation(orientation);
                 },
                 update_orientation(orientation) {
@@ -302,6 +303,7 @@
                 this.did_move = false;
                 this.invert_scroll = false;
                 this.orientation = 0;  // clockwise, in degree°. -90, 0, 90, 180
+                this.window_orientation = 0;
                 this.open_websocket();
             }
             Mouse.prototype = {
@@ -315,6 +317,7 @@
                     this.paste.onblur = this.paste_blur.bind(this);
                     this.paste.addEventListener("paste", this.send_clipboard.bind(this), false);
                     this.paste.addEventListener('keydown', this.paste_on_keydown.bind(this), false);
+                    window.addEventListener('orientationchange', this.window_orientation_change.bind(this), true);
                 },
                 open_websocket() {
                     this.websocket = new WebSocket(this.url);
@@ -413,9 +416,14 @@
                     }
                     return {x: x/i, y: y/i};
                 },
+                _degree_rotate: function (value, offset=0) {
+                    return ((value + 90 + offset) % 360) - 90;
+                },
                 _rotate: function (x, y) {
                     var tmp = 0;
-                    switch (this.orientation) {
+                    var orientation = this.orientation;
+                    orientation = this._degree_rotate(orientation, this.window_orientation);
+                    switch (orientation) {
                         case 0:
                             break;
                         case 90:
@@ -433,6 +441,7 @@
                             y *= -1;
                             break;
                     }
+
                     return {x:x, y:y};
                 },
                 touchmove: function (event) {
@@ -610,6 +619,10 @@
                         return false;
                     }
                 },
+                window_orientation_change() {
+                    console.log('orientation change to '+window.orientation+'°.');
+                    this.window_orientation = window.orientation;
+                }
             };
             var _files = null;
             var c = new HtmlConsole(document.querySelector('.console'));
