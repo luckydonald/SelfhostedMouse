@@ -77,7 +77,6 @@ async def mouse(websocket, _):
     try:
         # await websocket.send(state_event())
         async for message in websocket:
-            logging.debug('message: {}'.format(message))
             data = json.loads(message)
             if data['action'] == 'click' and 'button' in data and data['button'] in BUTTONS:
                 button = data['button']
@@ -85,11 +84,9 @@ async def mouse(websocket, _):
                 m.click(BUTTONS[button])
             elif data['action'] == 'move' and 'x' in data and 'y' in data:
                 x, y = data['x'], data['y']
-                logger.info('move - x: {x}, y: {y}'.format(x=y, y=y))
                 mouse_move(x,y)
             elif data['action'] == 'scroll' and 'x' in data and 'y' in data:
                 x, y = int(data['x']), int(data['y'])
-                logger.info('scroll - x: {x}, y: {y}'.format(x=x, y=y))
                 m.scroll(x,y)
             elif data['action'] == 'paste' and (('text' in data and data['text']) or ('file' in data and data['file'])):
                 append = False

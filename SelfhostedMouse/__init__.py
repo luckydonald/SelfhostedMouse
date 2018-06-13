@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 BIND_HOST = '0.0.0.0'
 BIND_PORT = 8080
 
-logging.add_colored_handler(level=logging.DEBUG)
+logging.add_colored_handler(__name__, level=logging.DEBUG)
 
 loop = asyncio.get_event_loop()
 logger.debug('registering sockwebserver')
