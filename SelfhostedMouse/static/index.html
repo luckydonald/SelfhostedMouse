@@ -6,12 +6,21 @@
         <style type="text/css">
             html, body {
                 overflow: hidden;
-                -webkit-overflow-scrolling: revert;
+                -webkit-overflow-scrolling: auto;
+                -webkit-tap-highlight-color: rgba(124, 241, 202, 0.51);
+                height: 100%;
+                overscroll-behavior-y: none;
             }
             body {
                 font-family: "Courier New", sans-serif;
                 text-align: center;
                 background: #656565;
+                position: fixed;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                touch-action: none;
             }
             .console {
                 position: absolute;
@@ -28,7 +37,6 @@
             .buttons, .settings {
                 font-size: 4em;
                 display: flex;
-                //justify-content: center;
                 position: absolute;
                 bottom: 0;
             }
@@ -38,7 +46,6 @@
                 height: 0;
                 opacity: 0.0;
                 display: none;
-                background-color: rgba(6, 6, 6, 0.9);
                 position: fixed;
                 color: white;
                 top: 0;
@@ -47,6 +54,7 @@
                 bottom: 0;
                 flex-wrap: nowrap;
                 flex-direction: column-reverse;
+                overscroll-behavior-y: contain;
             }
             .settings.show {
                 opacity: 1.0;
@@ -55,16 +63,18 @@
             }
             .settings .upper {
                 overflow-x: auto;
-                //padding-top: 1em;
-                //padding-bottom: 1em;
-                //align-self: flex-start;
-                //align-items: flex-start;
+                height: 100%;
+                background-color: rgba(6, 6, 6, 0.8);
+                -webkit-overflow-scrolling: touch;
             }
             .settings .upper label {
                 margin-top: 1em;
             }
+            .settings .lower {
+                background-color: rgba(255, 255, 255, 0.8);
+                color: #060606;
+            }
             .settings .button.close {
-                //align-self: flex-end;
             }
             .button, .value {
                 line-height: 1;
@@ -76,16 +86,17 @@
             }
             .button {
                 cursor: pointer;
+                -webkit-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
                 user-select: none;
             }
             .trackpad {
-                /*top: 20%; /* console */
                 top: 0;
                 left: 0;
                 right: 0;
                 bottom: 0;
                 position: absolute;
-                //background: #656565;
                 overflow: scroll;
                 line-break: auto;
                 font-size: 4em;
@@ -111,11 +122,13 @@
         <div class="trackpad"></div>
         <div class="console"></div>
         <div class="buttons">
-            <div class="setting button">settings</div>
-            <div class="paste button" contenteditable="true">paste here</div>
+            <div class="setting button noscroll">settings</div>
+            <div class="paste value noscroll" contenteditable="true">paste here</div>
         </div>
         <div class="settings">
-            <div class="close button">close</div>
+            <div class="lower">
+                <div class="close button noscroll">close</div>
+            </div>
             <div class="upper">
                 <label>Native scrolling</label>
                 <div class="scroll button" id="scroll">up</div>
@@ -316,7 +329,7 @@
                 bind: function () {
                     // bind events
                     this.trackpad.ontouchstart = this.touchstart.bind(this);
-                    this.trackpad.ontouchmove = this.touchmove.bind(this);
+                    this.trackpad.addEventListener('touchmove', this.touchmove.bind(this), true);
                     this.trackpad.ontouchend = this.touchend.bind(this);
                     this.trackpad.ontouchcancel = this.touchcancel.bind(this);
                     this.paste.onfocus = function () {window.setTimeout(this.select_all.bind(this), 1);}.bind(this);
@@ -483,6 +496,7 @@
                     this.last_time = new_time;
                     this.last_points = new_positions;
                     event.preventDefault();
+                    event.stopPropagation();
                     return false;
                 },
                 touchend: function (event) {
@@ -638,7 +652,27 @@
             var s = new Settings(m);
             m.bind();
             s.bind();
-
+            document.querySelectorAll('.button.noscroll').forEach(function (elem) {
+                elem.ontouchmove = function (e) {
+                    console.log('prevented move scroll', e.target);
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
+            });
+            document.body.ontouchmove = function (e) {
+                e.preventDefault();
+                var old_color = document.body.style.backgroundColor;
+                if (old_color !== 'hotpink') {
+                    window._body_old_color = old_color;
+                }
+                window.clearTimeout(window._body_timeout);
+                document.body.style.backgroundColor = 'hotpink';
+                window._body_timeout = window.setTimeout(function () {
+                    document.body.style.backgroundColor = window._body_old_color;
+                }, 100);
+                return false;
+            };
         </script>
     </body>
 </html>
