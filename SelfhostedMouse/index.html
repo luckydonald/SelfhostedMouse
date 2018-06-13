@@ -921,21 +921,66 @@ var prettyPrint = (function(){
                 this.invert_scroll = false;
             }
             Mouse.prototype = {
+                storage_check: function() {
+                    return typeof(Storage) !== "undefined";
+                },
+                storage_save: function(key, value, days) {
+                    value = JSON.stringify(value);
+                    if (this.storage_check()) {
+                        localStorage.setItem(key, value);
+                    } else {
+                        // cookie fallback
+                        var expires = "";
+                        if (days) {
+                            var date = new Date();
+                            date.setTime(date.getTime()+(days*24*60*60*1000));
+                            expires = "; expires=" + date.toGMTString();
+                        }
+                        document.cookie = key+"="+value+expires+"; path=/";
+                    }
+                },
+                storage_get(key, default_value=undefined) {
+                    var value = null;
+                    if (this.storage_check()) {
+                        value = localStorage.getItem(key);
+                        if (value === null) {
+                            return default_value;
+                        }
+                    } else {
+                        // cookie fallback
+                        /*
+                         * after adding a cookie like
+                         * >> document.cookie = "bar=test; expires=Thu, 14 Jun 2018 13:05:38 GMT; path=/"
+                         * the content of document.cookie may look like
+                         * >> "foo=value; bar=test"
+                         */
+                        var nameEQ = name + "=";  // what we are looking for
+                        var ca = document.cookie.split(';');  // split into separate cookies
+                        for(var i=0;i < ca.length;i++) {
+                            var c = ca[i];  // the current cookie
+                            while (c.charAt(0) === ' ') c = c.substring(1,c.length);  // remove leading spaces
+                            if (c.indexOf(nameEQ) === 0) {  // if it is the searched cookie
+                                value = c.substring(nameEQ.length,c.length);
+                                break;
+                            }
+                        }
+                        return default_value; // no cookie found
+                    }
+                    return JSON.parse(value);
+                },
                 init: function () {
-                    //this.trackpad.addEventListener("touchstart", this.touchstart.bind(this), false);
-                    //this.trackpad.addEventListener("touchmove", this.touchmove.bind(this), false);
+                    // load settings
+                    this.update_scroll(this.storage_get('invert_scroll', true));
+
+                    // bind events
                     this.trackpad.ontouchstart = this.touchstart.bind(this);
                     this.trackpad.ontouchmove = this.touchmove.bind(this);
                     this.trackpad.ontouchend = this.touchend.bind(this);
                     this.trackpad.ontouchcancel = this.touchcancel.bind(this);
-                    //this.clipboard.onclick = function () {this.clipboard.focus();};
                     this.paste.onfocus = function () {window.setTimeout(this.select_all.bind(this), 1);}.bind(this);
                     this.paste.onblur = this.paste_blur.bind(this);
                     this.paste.addEventListener("paste", this.send_clipboard.bind(this), false);
                     this.paste.addEventListener('keydown', this.paste_on_keydown.bind(this), false);
-                    //document.addEventListener("copy",  clipboard, false);
-        			//document.addEventListener("cut",   clipboard, false);
-			        //document.addEventListener("paste", clipboard, false);
                     this.scroll.onclick = this.toggle_scroll.bind(this);
                 },
                 event2pos: function (event) {
@@ -1147,8 +1192,12 @@ var prettyPrint = (function(){
                     }
                 },
                 toggle_scroll: function (e) {
-                    this.invert_scroll = this.scroll.innerText === 'up';
-                    this.scroll.innerText = this.invert_scroll ? 'down' : 'up';
+                    this.update_scroll(!this.invert_scroll);
+                },
+                update_scroll(invert) {
+                    this.invert_scroll = invert;
+                    this.scroll.innerText = invert ? 'down' : 'up';
+                    this.storage_save('invert_scroll', invert);
                 }
             };
             var _files = null;
