@@ -186,6 +186,7 @@
                 this.scroll = document.querySelector('.settings .button.scroll');
                 this.orientation = document.querySelector('.settings .button.orientation');
                 this.console = document.querySelector('.settings .button.log');
+                this.lock = document.querySelector('.settings .button.lock');
 
                 this.console_pane = document.querySelector('.console');
 
@@ -193,6 +194,7 @@
             Settings.prototype = {
                 bind: function () {
                     this.open.onclick = this.toggle_show.bind(this);
+                    this.lock.onclick = this.toggle_lock.bind(this);
                     this.close.onclick = this.toggle_show.bind(this);
                     this.scroll.onclick = this.toggle_scroll.bind(this);
                     this.console.onclick = this.toggle_console.bind(this);
@@ -201,6 +203,7 @@
                     this.update_scroll(this.storage_get('invert_scroll', true));
                     this.update_orientation(this.storage_get('orientation', 0));
                     this.update_console(this.storage_get('show_console', false));
+                    this.update_lock(this.storage_get('lock_orientation', true));
                 },
                 toggle_show(e) {
                     console.log('settings toggled');
@@ -209,6 +212,14 @@
                     } else {
                         this.pane.classList.add('show');
                     }
+                },
+                toggle_lock() {
+                    this.update_lock(!this.mouse.lock_orientation);
+                },
+                update_lock(lock) {
+                    this.mouse.lock_orientation = lock;
+                    this.lock.innerText = lock ? 'physical rotation' : 'device orientation';
+                    this.storage_save('lock_orientation', lock);
                 },
                 toggle_console() {
                     console.debug('console toggled');
@@ -441,7 +452,9 @@
                 _rotate: function (x, y) {
                     var tmp = 0;
                     var orientation = this.orientation;
-                    orientation = this._degree_rotate(orientation, this.window_orientation);
+                    if(this.lock_orientation) {
+                        orientation = this._degree_rotate(orientation, this.window_orientation);
+                    }
                     switch (orientation) {
                         case 0:
                             break;
@@ -660,19 +673,6 @@
                     return false;
                 }
             });
-            document.body.ontouchmove = function (e) {
-                e.preventDefault();
-                var old_color = document.body.style.backgroundColor;
-                if (old_color !== 'hotpink') {
-                    window._body_old_color = old_color;
-                }
-                window.clearTimeout(window._body_timeout);
-                document.body.style.backgroundColor = 'hotpink';
-                window._body_timeout = window.setTimeout(function () {
-                    document.body.style.backgroundColor = window._body_old_color;
-                }, 100);
-                return false;
-            };
         </script>
     </body>
 </html>
