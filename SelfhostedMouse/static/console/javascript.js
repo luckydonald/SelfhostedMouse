@@ -1,6 +1,7 @@
 function HtmlConsole(element) {
     this._orginal_functions = {};
     this.element = element || document.body;
+    this.enabled = true;
 }
 HtmlConsole.prototype._add_log = function(level) {
     var old_function = console[level];
@@ -12,6 +13,9 @@ HtmlConsole.prototype._add_log = function(level) {
             try {
                 old_function(arguments);
             } catch (e) {}
+        }
+        if (!this.enabled) {
+            return;
         }
         var args = [].slice.call(arguments);
         var err = document.createElement('div');

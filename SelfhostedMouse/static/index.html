@@ -177,7 +177,8 @@
                 }
             )}
 
-            function Settings(mouse) {
+            function Settings(console, mouse) {
+                this._console = console;
                 this.mouse = mouse;
 
                 this.pane = document.querySelector('.settings');
@@ -218,7 +219,7 @@
                 },
                 update_lock(lock) {
                     this.mouse.lock_orientation = lock;
-                    this.lock.innerText = lock ? 'physical rotation' : 'device orientation';
+                    this.lock.innerText = lock ? 'physical rotation' : 'software orientation';
                     this.storage_save('lock_orientation', lock);
                 },
                 toggle_console() {
@@ -226,6 +227,7 @@
                     this.update_console(!this.console_pane.classList.contains('show'));
                 },
                 update_console(show) {
+                    this._console.enabled = show;
                     if (show) {
                         this.console_pane.classList.add('show');
                         this.console.innerText = 'yes';
@@ -662,7 +664,7 @@
             c.register();
             c.test();
             var m = new Mouse();
-            var s = new Settings(m);
+            var s = new Settings(c,m,c);
             m.bind();
             s.bind();
             document.querySelectorAll('.button.noscroll').forEach(function (elem) {
