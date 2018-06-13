@@ -85,6 +85,7 @@
                 //background: #656565;
                 overflow: scroll;
                 line-break: auto;
+                font-size: 4em;
             }
         </style>
         <meta charset="utf-8" />
@@ -278,6 +279,12 @@
                 return JSON.parse(value);
             };
 
+            var Emoji = {};
+            Emoji[-90] = "⬅️";
+            Emoji[0] = "⬇️";
+            Emoji[90] = "➡️";
+            Emoji[180] = "⬆️";
+
             function Mouse() {
                 this.body = document.querySelector('body');
                 this.trackpad = document.querySelector('.trackpad');
@@ -285,32 +292,71 @@
                 this.paste_last_html = this.paste.innerHTML;
                 //this.users = document.querySelector('.users');
                 this.url = "ws://"+location.host+"/s";
-                this.websocket = new WebSocket(this.url);
-                this.websocket.addEventListener('open', function (e) {
-                     console.log('websocket opened', e);
-                });
-                this.websocket.addEventListener('message', function (e) {
-                     console.log('websocket message', e);
-                });
-                this.websocket.addEventListener('error', function (e) {
-                     console.error('websocket error', e);
-                });
-                this.websocket.addEventListener('close', function (e) {
-                     console.log('websocket closed', e);
-                });
+                this.websocket = null;
+                this.websocket_timeout_count = 0;
+                this.websocket_timeout_interval = null;  // interval to update the 'reconnect in x second' counter.
+                this.websocket_connect_message_timeout = null;  // timeout to hide the 'connected' message.
+                this.websocket_open = false;
                 this.start_points = [];
                 this.last_time = null;
                 this.last_points = [];
                 this.did_move = false;
                 this.invert_scroll = false;
                 this.orientation = 0;  // clockwise, in degree°. -90, 0, 90, 180
+                this.open_websocket();
             }
-            var Emoji = {};
-            Emoji[-90] = "⬅️";
-            Emoji[0] = "⬇️";
-            Emoji[90] = "➡️";
-            Emoji[180] = "⬆️";
             Mouse.prototype = {
+                open_websocket() {
+                    this.websocket = new WebSocket(this.url);
+                    this.websocket.addEventListener('open', function (e) {
+                        this.websocket_timeout_count = 0;
+                        this.websocket_open = true;
+                        this.body.style.backgroundColor = null;
+                        this.trackpad.innerText = 'Connected.';
+                        window.clearTimeout(this.websocket_connect_message_timeout);
+                        this.websocket_connect_message_timeout = window.setTimeout(function () {
+                            this.trackpad.innerText = null;
+                        }.bind(this), 1000);
+                        console.log('websocket opened', e);
+                    }.bind(this));
+                    this.websocket.addEventListener('message', function (e) {
+                         console.log('websocket message', e);
+                    });
+                    this.websocket.addEventListener('error', function (e) {
+                         console.error('websocket error', e);
+                    });
+                    this.websocket.addEventListener('close', function (e) {
+                         console.log('websocket closed', e);
+                         this.websocket_open = false;
+                         this.body.style.backgroundColor = 'red';
+                         this.reopen_websocket();
+                    }.bind(this));
+                },
+                reopen_websocket() {
+                    console.warn('waiting '+ this.websocket_timeout_count + ' seconds until retrying opening the socket');
+                    this.websocket_timeout_interval_count = this.websocket_timeout_count + 1;
+                    this.websocket_timeout_count ++;
+                    this.websocket_timeout_interval = window.setInterval(this.status_websocket.bind(this), 1000);
+                },
+                status_websocket() {
+                    this.websocket_timeout_interval_count--;
+                    if (this.websocket_open) {
+                        window.clearInterval(this.websocket_timeout_interval);
+                        this.trackpad.innerText = 'Connected.';
+                        return;
+                    }
+                    this.trackpad.innerText = (
+                        'Reconnecting in ' +
+                        (this.websocket_timeout_interval_count).toFixed(0) +
+                        ' seconds'
+                    );
+                    if(this.websocket_timeout_interval_count <= 0) {
+                        this.trackpad.innerText = 'Reconnecting...';
+                        console.log('will reopen the socket');
+                        window.clearInterval(this.websocket_timeout_interval);
+                        this.open_websocket();
+                    }
+                },
                 bind: function () {
                     // bind events
                     this.trackpad.ontouchstart = this.touchstart.bind(this);
@@ -389,34 +435,35 @@
                             break;
                     }
                     return {x:x, y:y};
-                }, touchmove: function (event) {
+                },
+                touchmove: function (event) {
                     var new_positions = this.event2pos(event),
                         new_time = new Date().getTime(),
-                        new_pos, old_pos, x, y,
-                        velocity_x, velocity_y;
-                    if (new_positions.length === 1 || this.last_points.length === 1) {  // simple drag -> mouse move
-                        this.body.style.backgroundColor = '#94ff00';
-                        new_pos = new_positions[0];
-                        old_pos = this.last_points[0];
-                        x = new_pos.x - old_pos.x;
-                        y = new_pos.y - old_pos.y;
-                        var r = this._rotate(x, y);
-                        this.websocket.send(JSON.stringify({action: 'move', x: r.x, y: r.y}));
-                    } else if (new_positions.length === 2 && this.last_points.length === 2) {  // two finger drag -> mouse move
-                        this.body.style.backgroundColor = 'orange';
-                        new_pos = this.pointCenter(new_positions);
-                        old_pos = this.pointCenter(this.last_points);
-                        x = new_pos.x - old_pos.x;
-                        y = new_pos.y - old_pos.y;
-                        x = parseInt(x/10);
-                        y = parseInt(y/10);
-                        var r = this._rotate(x, y);
-                        if (this.invert_scroll) {
-                            r.y *= -1;
+                        new_pos, old_pos, x, y;
+                    if (this.websocket_open) {
+                        if (new_positions.length === 1 || this.last_points.length === 1) {  // simple drag -> mouse move
+                            this.body.style.backgroundColor = '#94ff00';
+                            new_pos = new_positions[0];
+                            old_pos = this.last_points[0];
+                            x = new_pos.x - old_pos.x;
+                            y = new_pos.y - old_pos.y;
+                            var r = this._rotate(x, y);
+                            this.websocket.send(JSON.stringify({action: 'move', x: r.x, y: r.y}));
+                        } else if (new_positions.length === 2 && this.last_points.length === 2) {  // two finger drag -> mouse move
+                            this.body.style.backgroundColor = 'orange';
+                            new_pos = this.pointCenter(new_positions);
+                            old_pos = this.pointCenter(this.last_points);
+                            x = new_pos.x - old_pos.x;
+                            y = new_pos.y - old_pos.y;
+                            x = parseInt(x / 10);
+                            y = parseInt(y / 10);
+                            var r = this._rotate(x, y);
+                            if (this.invert_scroll) {
+                                r.y *= -1;
+                            }
+                            this.send({action: 'scroll', x: r.x, y: r.y});
                         }
-                        this.send({action: 'scroll', x: r.x, y: r.y});
                     }
-
 
                     this.did_move = true;
                     this.last_time = new_time;
@@ -425,7 +472,10 @@
                     return false;
                 },
                 touchend: function (event) {
-                    this.body.style.backgroundColor = '#656565';
+                    if (!this.websocket_open) {
+                        return false;
+                    }
+                    this.body.style.backgroundColor = null;
                     //this.start_points = this.event2pos(event);
                     var new_pos = this.event2pos(event);
                     if (this.did_move === false) {
@@ -439,9 +489,11 @@
                     return false;
                 },
                 touchcancel: function (event) {
-                    this.body.style.backgroundColor = 'red';
+                    if (!this.websocket_open) {
+                        return false;
+                    }
+                    this.body.style.backgroundColor = 'violet';
                     //this.start_points = this.event2pos(event);
-                    var new_pos = this.event2pos(event);
                     event.preventDefault();
                     return false;
                 },
@@ -459,6 +511,9 @@
                     this.websocket.send(data);
                 },
                 send_clipboard: function (e) {
+                    if (!this.websocket_open) {
+                        return false;
+                    }
                     var types = e.clipboardData.types;
                     var response = {};
                     var had_file = false;
@@ -539,6 +594,9 @@
                     }
                 },
                 paste_on_keydown: function(e) {
+                    if (!this.websocket_open) {
+                        return false;
+                    }
                     // trap the return key being pressed
                     if (e.keyCode === 13) {
                         if (e.metaKey === true) {
