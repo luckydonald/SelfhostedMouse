@@ -28,34 +28,43 @@
             .buttons, .settings {
                 font-size: 4em;
                 display: flex;
-                justify-content: center;
+                //justify-content: center;
                 position: absolute;
                 bottom: 0;
             }
             .settings {
-                justify-content: left;
+                justify-content: flex-start;
+                align-items: stretch;
                 height: 0;
                 opacity: 0.0;
                 display: none;
                 background-color: rgba(6, 6, 6, 0.9);
-                position: absolute;
+                position: fixed;
                 color: white;
+                top: 0;
                 left: 0;
                 right: 0;
                 bottom: 0;
+                flex-wrap: nowrap;
+                flex-direction: column-reverse;
             }
             .settings.show {
                 opacity: 1.0;
-                display: block;
                 height: 100%;
+                display: flex;
             }
             .settings .upper {
                 overflow-x: auto;
-                padding-top: 1em;
-                padding-bottom: 1em;
+                //padding-top: 1em;
+                //padding-bottom: 1em;
+                //align-self: flex-start;
+                //align-items: flex-start;
             }
             .settings .upper label {
                 margin-top: 1em;
+            }
+            .settings .button.close {
+                //align-self: flex-end;
             }
             .button, .value {
                 line-height: 1;
@@ -68,12 +77,6 @@
             .button {
                 cursor: pointer;
                 user-select: none;
-            }
-            .settings .button.close {
-                position: absolute;
-                left: 0;
-                right: 0;
-                bottom: 0;
             }
             .trackpad {
                 /*top: 20%; /* console */
@@ -119,6 +122,9 @@
 
                 <label>Screen orientation</label>
                 <div class="orientation button">0°</div>
+
+                <label>Adapt to rotation changes</label>
+                <div class="lock button">locked</div>
 
                 <label>Show debugging log</label>
                 <div class="log button">no</div>
