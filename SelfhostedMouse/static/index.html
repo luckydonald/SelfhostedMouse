@@ -167,7 +167,7 @@
                     this.orientation.onclick = this.toggle_orientation.bind(this);
                     // load settings
                     this.update_scroll(this.storage_get('invert_scroll', true));
-                    this.update_orientation(this.storage_get('orientation', true));
+                    this.update_orientation(this.storage_get('orientation', 0));
                 },
                 toggle_show(e) {
                     console.log('toggled');
@@ -182,6 +182,10 @@
                     this.update_orientation(orientation);
                 },
                 update_orientation(orientation) {
+                    if ([-90, 0, 90, 180].indexOf(orientation) === -1){
+                        console.warn('illegal orientation', 0);
+                        orientation = 0;
+                    }
                     this.mouse.orientation = orientation;
                     this.orientation.innerText = orientation + '° ' + Emoji[orientation];
                     this.storage_save('orientation', orientation);
