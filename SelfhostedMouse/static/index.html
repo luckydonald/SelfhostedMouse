@@ -298,7 +298,6 @@
                 this.websocket_connect_message_timeout = null;  // timeout to hide the 'connected' message.
                 this.websocket_open = false;
                 this.start_points = [];
-                this.last_time = null;
                 this.last_points = [];
                 this.did_move = false;
                 this.invert_scroll = false;
@@ -306,6 +305,17 @@
                 this.open_websocket();
             }
             Mouse.prototype = {
+                bind: function () {
+                    // bind events
+                    this.trackpad.ontouchstart = this.touchstart.bind(this);
+                    this.trackpad.ontouchmove = this.touchmove.bind(this);
+                    this.trackpad.ontouchend = this.touchend.bind(this);
+                    this.trackpad.ontouchcancel = this.touchcancel.bind(this);
+                    this.paste.onfocus = function () {window.setTimeout(this.select_all.bind(this), 1);}.bind(this);
+                    this.paste.onblur = this.paste_blur.bind(this);
+                    this.paste.addEventListener("paste", this.send_clipboard.bind(this), false);
+                    this.paste.addEventListener('keydown', this.paste_on_keydown.bind(this), false);
+                },
                 open_websocket() {
                     this.websocket = new WebSocket(this.url);
                     this.websocket.addEventListener('open', function (e) {
@@ -356,17 +366,6 @@
                         window.clearInterval(this.websocket_timeout_interval);
                         this.open_websocket();
                     }
-                },
-                bind: function () {
-                    // bind events
-                    this.trackpad.ontouchstart = this.touchstart.bind(this);
-                    this.trackpad.ontouchmove = this.touchmove.bind(this);
-                    this.trackpad.ontouchend = this.touchend.bind(this);
-                    this.trackpad.ontouchcancel = this.touchcancel.bind(this);
-                    this.paste.onfocus = function () {window.setTimeout(this.select_all.bind(this), 1);}.bind(this);
-                    this.paste.onblur = this.paste_blur.bind(this);
-                    this.paste.addEventListener("paste", this.send_clipboard.bind(this), false);
-                    this.paste.addEventListener('keydown', this.paste_on_keydown.bind(this), false);
                 },
                 event2pos: function (event) {
                     if (event === undefined || event === null) {
