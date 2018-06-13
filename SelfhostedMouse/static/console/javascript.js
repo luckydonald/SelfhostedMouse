@@ -21,6 +21,7 @@ HtmlConsole.prototype._add_log = function(level) {
         var log = prettyPrint(value);
         err.appendChild(log);
         this.element.appendChild(err);
+        err.scrollIntoView({behavior: 'smooth', block: 'end'});
     }.bind(this);
 };
 HtmlConsole.prototype.register = function (onerror=true) {
