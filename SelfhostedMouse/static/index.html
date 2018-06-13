@@ -111,6 +111,10 @@
             <div class="upper">
                 <label>Native scrolling</label>
                 <div class="scroll button" id="scroll">up</div>
+
+                <label>Screen orientation</label>
+                <div class="orientation button">0°</div>
+
                 <label>Reload the page</label>
                 <div class="reload button" id="reload" onclick="location.reload()">reload</div>
             </div>
@@ -153,14 +157,17 @@
                 this.open = document.querySelector('.setting');
                 this.close = document.querySelector('.settings .close');
                 this.scroll = document.querySelector('.settings .scroll');
+                this.orientation = document.querySelector('.settings .orientation');
             }
             Settings.prototype = {
                 bind: function () {
                     this.open.onclick = this.toggle_show.bind(this);
                     this.close.onclick = this.toggle_show.bind(this);
                     this.scroll.onclick = this.toggle_scroll.bind(this);
+                    this.orientation.onclick = this.toggle_orientation.bind(this);
                     // load settings
                     this.update_scroll(this.storage_get('invert_scroll', true));
+                    this.update_orientation(this.storage_get('orientation', true));
                 },
                 toggle_show(e) {
                     console.log('toggled');
@@ -169,6 +176,15 @@
                     } else {
                         this.pane.classList.add('show');
                     }
+                },
+                toggle_orientation: function (e) {
+                    var orientation = ((this.mouse.orientation + 180) % 360)-90;  // cycles through -90, 0, 90, 180
+                    this.update_orientation(orientation);
+                },
+                update_orientation(orientation) {
+                    this.mouse.orientation = orientation;
+                    this.orientation.innerText = orientation + '° ' + Emoji[orientation];
+                    this.storage_save('orientation', orientation);
                 },
                 toggle_scroll: function (e) {
                     this.update_scroll(!this.mouse.invert_scroll);
@@ -255,7 +271,13 @@
                 this.last_points = [];
                 this.did_move = false;
                 this.invert_scroll = false;
+                this.orientation = 0;  // clockwise, in degree°. -90, 0, 90, 180
             }
+            var Emoji = {};
+            Emoji[-90] = "⬅️";
+            Emoji[0] = "⬇️";
+            Emoji[90] = "➡️";
+            Emoji[180] = "⬆️";
             Mouse.prototype = {
                 bind: function () {
                     // bind events
@@ -314,7 +336,28 @@
                     }
                     return {x: x/i, y: y/i};
                 },
-                touchmove: function (event) {
+                _rotate: function (x, y) {
+                    var tmp = 0;
+                    switch (this.orientation) {
+                        case 0:
+                            break;
+                        case 90:
+                            tmp = x;
+                            x = y * -1;
+                            y = tmp;
+                            break;
+                        case -90:
+                            tmp = x * -1;
+                            x = y * 1; // *1 to remove IDE's warning.
+                            y = tmp;
+                            break;
+                        case 180:
+                            x *= -1;
+                            y *= -1;
+                            break;
+                    }
+                    return {x:x, y:y};
+                }, touchmove: function (event) {
                     var new_positions = this.event2pos(event),
                         new_time = new Date().getTime(),
                         new_pos, old_pos, x, y,
@@ -325,7 +368,8 @@
                         old_pos = this.last_points[0];
                         x = new_pos.x - old_pos.x;
                         y = new_pos.y - old_pos.y;
-                        this.websocket.send(JSON.stringify({action: 'move', x: x, y: y}));
+                        var r = this._rotate(x, y);
+                        this.websocket.send(JSON.stringify({action: 'move', x: r.x, y: r.y}));
                     } else if (new_positions.length === 2 && this.last_points.length === 2) {  // two finger drag -> mouse move
                         this.body.style.backgroundColor = 'orange';
                         new_pos = this.pointCenter(new_positions);
@@ -334,11 +378,11 @@
                         y = new_pos.y - old_pos.y;
                         x = parseInt(x/10);
                         y = parseInt(y/10);
-                        var tmp = 0;
+                        var r = this._rotate(x, y);
                         if (this.invert_scroll) {
-                            y *= -1;
+                            r.y *= -1;
                         }
-                        this.send({action: 'scroll', x: x, y: y});
+                        this.send({action: 'scroll', x: r.x, y: r.y});
                     }
 
 
