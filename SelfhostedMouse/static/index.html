@@ -432,7 +432,9 @@
                     return arr.map(itm => itm.x + " | " + itm.y).reduce((old, next) =>  old + "\n" + next);
                 },
                 touchstart: function (event) {
-                    this.body.style.backgroundColor = 'green';
+                    if (this.websocket_open) {
+                        this.body.style.backgroundColor = 'green';
+                    }
                     this.start_points = this.event2pos(event);
                     this.last_points = this.start_points;
                     this.did_move = false;
