@@ -1,4 +1,5 @@
 import asyncio
+from os import path
 from http import HTTPStatus
 
 import websockets
@@ -10,8 +11,11 @@ logger = logging.getLogger(__name__)
 
 
 class PATHS(object):
-    # {'server': 'file system'}
-    #  None = use server path
+    # `{'server': 'file system'}`
+    #  value `None` = use server path
+    HTML = {
+        '/': '/index.html'
+    }
     JS = {
         '/html_console/prettyprint.js': None,
         '/html_console/html_console.js': None,
@@ -21,8 +25,13 @@ class PATHS(object):
     }
 
     @staticmethod
-    def relative_path(path):
-        return './static' + path
+    def relative_path(file_path):
+        return path.join(path.dirname(__file__), 'static', *file_path.lstrip('/').split('/'))
+    # end def
+
+    @classmethod
+    def html(cls, path):
+        return cls.relative_path(path if PATHS.HTML[path] is None else PATHS.HTML[path])
     # end def
 
     @classmethod
@@ -81,9 +90,9 @@ class WebSocketServerProtocol2(websockets.WebSocketServerProtocol):
         if path == '/s':  # socket
             return None
         # end if
-        if path == "/":  # main page
+        if path in PATHS.HTML:  # main page
             headers['Content-type'] = 'text/html; charset=utf-8'
-            body = read_file('./static/index.html')
+            body = read_file(PATHS.html(path))
         elif path in PATHS.JS:  # prettyprint.js
             headers['Content-type'] = 'text/javascript; charset=utf-8'
             body = read_file(PATHS.js(path))
