@@ -1,0 +1,5 @@
+websockets
+luckydonald-utils
+pynput
+# Pillow==5.0.0
+weakreflist
