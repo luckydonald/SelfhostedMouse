@@ -13,11 +13,11 @@ class PATHS(object):
     # {'server': 'file system'}
     #  None = use server path
     JS = {
-        '/prettyprint.js': None,
-        '/console/javascript.js': None,
+        '/html_console/prettyprint.js': None,
+        '/html_console/html_console.js': None,
     }
     CSS = {
-        '/console/stylesheet.css': None
+        '/html_console/html_console.css': None
     }
 
     @staticmethod
