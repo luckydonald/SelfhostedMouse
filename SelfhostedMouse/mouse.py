@@ -90,23 +90,28 @@ async def mouse(websocket, _):
                 m.scroll(x,y)
             elif data['action'] == 'paste' and (('text' in data and data['text']) or ('file' in data and data['file'])):
                 append = False
-                import base64
-                if 'file' in data and data['file']:
-                    file = data['file']
-                    img_data = file['data']
-                    del file['data']
-                    img_type, img_data = tuple(img_data.split(",", 1))
-                    logger.info('got file of type {!r}: {!r}'.format(img_type, file))
-                    assert img_type.endswith(';base64');
-                    assert img_type.startswith('data:')
-                    img_mime = img_type[5:-7]
-                    img_data = base64.b64decode(img_data)
-                    Clipboard().copy_img(img_data, mime=img_mime)
-                    append = True
-                # end if
-                if 'text' in data and data['text']:
-                    Clipboard().copy_text(data['text'], clear_first=not append)
-                # end if
+                logger.info('{!r}'.format(data))
+                try:
+                    if 'file' in data and data['file']:
+                        import base64
+                        file = data['file']
+                        img_data = file['data']
+                        del file['data']
+                        img_type, img_data = tuple(img_data.split(",", 1))
+                        logger.info('got file of type {!r}: {!r}'.format(img_type, file))
+                        assert img_type.endswith(';base64');
+                        assert img_type.startswith('data:')
+                        img_mime = img_type[5:-7]
+                        img_data = base64.b64decode(img_data)
+                        Clipboard().copy_img(img_data, mime=img_mime)
+                        append = True
+                    # end if
+                    if 'text' in data and data['text']:
+                        Clipboard().copy_text(data['text'], clear_first=not append)
+                    # end if
+                except:
+                    logger.exception('clipboard failed with event {!r}.'.format(data))
+                # end def
             else:
                 logging.error("unsupported event: {!r}".format(data))
             # end if
