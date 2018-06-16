@@ -20,8 +20,10 @@ class Clipboard(object):
         'text': 'public.utf8-plain-text',
         'text/plain': 'public.utf8-plain-text',
 
-        'image/png': 'public',
+        'image/png': 'public.png',
         'png': 'public.png',
+
+        'text/uri-list': 'public.URL',
     }
     def _f(self, fmt):
         return self.FORMAT_CONVERTER[fmt]
