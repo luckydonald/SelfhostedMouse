@@ -680,6 +680,55 @@
                     this.window_orientation = window.orientation;
                 }
             };
+
+            function Keyboard(mouse) {
+                this.mouse = mouse;
+                this.type = document.querySelector('.value.type');
+                this.last_input = "";
+                this.skipped_space = false;  // we have not send the last space,
+                                            // as we think it is set by autocompletion.
+
+            }
+            Keyboard.prototype = {
+                bind: function() {
+                    this.type.addEventListener('focus', this.type_focus.bind(this));
+                    this.type.addEventListener('input', this.type_input.bind(this));
+                    this.type.addEventListener('keydown', function (e) {
+                        console.log('keydown: ', e);
+                    });
+                    this.type.addEventListener('keypress', function (e) {
+                        console.log('keypress: ', e);
+                    });
+                    this.type.addEventListener('keyup', function (e) {
+                        console.log('keyup: ', e);
+                    });
+                },
+                type_focus: function(e) {
+                    this.type.innerText = "";
+                },
+                type_blur: function(e) {
+                    this.type.innerText = "keyboard";
+                },
+                type_input: function(e) {
+                    var char = this.type.innerText;
+                    console.log('typed: '+char);
+                    //this.type.innerText = "";
+                    if (char === '\xa0') {  // &nbsp; made by the iphone.
+                        char = ' ';
+                        if (this.last_input.length >= 2) {
+                            this.skipped_space = true;
+                            return;  // don't send
+                        }
+                    } else {
+                        char = char.replace('\xa0', ' ');  // &nbsp; made by the iphone.
+                        if (this.skipped_space) {  // so we typed something after a autocompletion-space we omitted
+                            // add it back in
+                            char = ' ' + char;
+                        }
+                    }
+                    this.mouse.websocket.send(JSON.stringify({action: 'type', value: char}));
+                }
+            };
             var _files = null;
             var c = new HtmlConsole(document.querySelector('.console'));
             c.register();
