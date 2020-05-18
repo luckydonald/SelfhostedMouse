@@ -5,26 +5,24 @@
         <title>Selfhosted Mouse</title>
         <style type="text/css">
             html, body {
+                margin: 0;
+                padding: 0;
                 overflow: hidden;
                 -webkit-overflow-scrolling: auto;
                 -webkit-tap-highlight-color: rgba(124, 241, 202, 0.51);
                 height: 100%;
                 overscroll-behavior-y: none;
+                //font-size: 12px;
             }
             body {
                 font-family: "Courier New", sans-serif;
                 text-align: center;
                 background: #656565;
-                position: fixed;
-                top: 0;
-                bottom: 0;
-                left: 0;
-                right: 0;
                 touch-action: none;
             }
             .console {
                 position: absolute;
-                top: 0;
+                top: -1em;
                 bottom: 80%;
                 left: 0;
                 right: 0;
@@ -35,7 +33,7 @@
                 display: block;
             }
             .buttons, .settings {
-                font-size: 4em;
+                font-size: 2rem;
                 display: flex;
                 position: absolute;
                 bottom: 0;
@@ -43,7 +41,7 @@
             .settings {
                 justify-content: flex-start;
                 align-items: stretch;
-                height: 0;
+                //height: 0;
                 opacity: 0.0;
                 display: none;
                 position: fixed;
@@ -69,18 +67,22 @@
             }
             .settings .upper label {
                 margin-top: 1em;
+                display: block;
+                font-size: 0.75em;
             }
             .settings .lower {
                 background-color: rgba(255, 255, 255, 0.8);
                 color: #060606;
             }
-            .settings .button.close {
+            .pony .settings .lower {
+                color: #E880B0;
+                background-color: #F5B7D0;
             }
             .button, .value {
                 line-height: 1;
-                padding: 2rem;
-                margin: 2rem;
-                border: medium solid;
+                padding: 0.5rem;
+                margin: 0.5rem;
+                border: 0.1rem solid;
                 min-height: 1em;
                 min-width: 1em;
             }
@@ -95,18 +97,30 @@
                 top: 0;
                 left: 0;
                 right: 0;
-                bottom: 0;
+                bottom: -20px;
                 position: absolute;
-                overflow: scroll;
+                overflow: auto;
                 line-break: auto;
                 font-size: 4em;
             }
+            html{
+                background-color: hotpink;
+            }
+            body {
+                background-color: chartreuse;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+            }
         </style>
         <meta charset="utf-8" />
-        <meta name="apple-mobile-web-app-title" content="shMouse" />
+        <meta name="apple-mobile-web-app-title" content="SelfhostedMouse" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="viewport" content="user-scalable=0"/><!-- width=device-width, initial-scale=1, maximum-scale=1, -->
+        <meta name="apple-mobile-web-app-status-bar-style" content="minimal-ui" />
+        <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, height=device-height,  minimal-ui, viewport-fit=cover">
+
         <script>
             if(true) {  // weinre debug
                 var scpt = document.createElement('script');
@@ -124,7 +138,8 @@
         <div class="console"></div>
         <div class="buttons">
             <div class="setting button noscroll">settings</div>
-            <div class="paste value noscroll" contenteditable="true">paste here</div>
+            <div class="paste value noscroll" contenteditable="true">paste</div>
+            <!--<div class="type value noscroll" contenteditable="true">keyboard</div>-->
         </div>
         <div class="settings">
             <div class="lower">
@@ -434,7 +449,7 @@
                 },
                 touchstart: function (event) {
                     if (this.websocket_open) {
-                        this.body.style.backgroundColor = 'green';
+                        this.body.style.backgroundColor = '#b4ff51';
                     }
                     this.start_points = this.event2pos(event);
                     this.last_points = this.start_points;
@@ -667,9 +682,11 @@
             c.register();
             c.test();
             var m = new Mouse();
+            var k = new Keyboard(m);
             var s = new Settings(c,m,c);
             m.bind();
             s.bind();
+            //k.bind();
             document.querySelectorAll('.button.noscroll').forEach(function (elem) {
                 elem.ontouchmove = function (e) {
                     console.log('prevented move scroll', e.target);
@@ -678,6 +695,16 @@
                     return false;
                 }
             });
+            function updateWidth(){
+                var viewport = document.querySelector("meta[name=viewport]");
+                /*if (window.orientation == 90 || window.orientation == -90) {
+                    viewport.setAttribute('content', 'width=1401, initial-scale=0.34, maximum-scale=1.0, user-scalable=1');
+                }
+                else {
+                    viewport.setAttribute('content', 'width=640, initial-scale=0.47, maximum-scale=1.0, user-scalable=1');
+                }*/
+                viewport.setAttribute('user-scalable=no; width=device-width; initial-scale=1.0; minimum-scale=1.0; maximum-scale=1.0; height=device-height');
+            }
         </script>
     </body>
 </html>
