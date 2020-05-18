@@ -1,0 +1,9 @@
+DictObject==1.1.1
+luckydonald-utils==0.77
+pynput==1.6.8
+pyobjc-core==6.2
+pyobjc-framework-Cocoa==6.2
+pyobjc-framework-Quartz==6.2
+six==1.14.0
+weakreflist==0.4
+websockets==8.1

@@ -57,7 +57,6 @@ class WebSocketServerProtocol2(websockets.WebSocketServerProtocol):
     """
     Like the normal one, but with a custom process_request, adding extra routing for the main page.
     """
-    @asyncio.coroutine
     def process_request(self, path, request_headers):
         """
         Intercept the HTTP request and return an HTTP response if needed.
