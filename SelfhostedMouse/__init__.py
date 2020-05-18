@@ -14,7 +14,7 @@ BIND_PORT = 8080
 logging.add_colored_handler(__name__, level=logging.DEBUG)
 
 loop = asyncio.get_event_loop()
-logger.debug('registering sockwebserver')
+logger.debug(f'registering sockwebserver on port {BIND_PORT}')
 
 loop.run_until_complete(create_server(mouse, BIND_HOST, BIND_PORT))
 loop.run_forever()
