@@ -1,4 +1,4 @@
-websockets==8.1
+websockets==9.1
 luckydonald-utils
 pynput
 # Pillow==5.0.0
